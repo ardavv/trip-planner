@@ -121,6 +121,8 @@ export default function PlaceBoard({
   )
 
   const [newPlaceName, setNewPlaceName] = useState('')
+  const [newLat, setNewLat] = useState('')
+  const [newLng, setNewLng] = useState('')
   const [isAdding, setIsAdding] = useState(false)
 
   // -------------------------------------------------------------------------
@@ -309,17 +311,26 @@ export default function PlaceBoard({
           ? Math.max(...placesRef.current.map((p) => p.order_index))
           : 0
 
+      const parsedLat = parseFloat(newLat)
+      const parsedLng = parseFloat(newLng)
+      const lat = !isNaN(parsedLat) ? parsedLat : null
+      const lng = !isNaN(parsedLng) ? parsedLng : null
+
       const { error } = await supabase
         .from('places')
         .insert({
           trip_id: tripId,
           name: name,
+          lat: lat,
+          lng: lng,
           order_index: maxOrderIndex + 1.0,
           status: 'TODO',
         })
 
       if (error) throw error
       setNewPlaceName('')
+      setNewLat('')
+      setNewLng('')
     } catch (err) {
       console.error('Failed to add place', err)
     } finally {
@@ -376,6 +387,22 @@ export default function PlaceBoard({
           onChange={(e) => setNewPlaceName(e.target.value)}
           disabled={isAdding}
           className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+        />
+        <input
+          type="text"
+          placeholder="Lat (opt)"
+          value={newLat}
+          onChange={(e) => setNewLat(e.target.value)}
+          disabled={isAdding}
+          className="w-24 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+        />
+        <input
+          type="text"
+          placeholder="Lng (opt)"
+          value={newLng}
+          onChange={(e) => setNewLng(e.target.value)}
+          disabled={isAdding}
+          className="w-24 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
         />
         <button
           type="submit"
