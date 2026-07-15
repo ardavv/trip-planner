@@ -49,6 +49,9 @@ export default function PlaceCard({ place, tripId }: PlaceCardProps) {
   const [isUpdating, setIsUpdating] = useState(false)
   const [localImageUrl, setLocalImageUrl] = useState(place.image_url)
 
+  const [isDeletingPhoto, setIsDeletingPhoto] = useState(false)
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
+
   // Sync inputs if prop changes externally (e.g. from Realtime sync)
   useEffect(() => {
     const est = Number(place.estimated_cost || 0)
@@ -60,7 +63,6 @@ export default function PlaceCard({ place, tripId }: PlaceCardProps) {
   }, [place.estimated_cost, place.actual_cost, place.image_url])
 
   const handleCostSubmit = async (field: 'estimated' | 'actual', rawValue: string) => {
-    // ... rest remains same ...
     let num = parseFloat(rawValue)
     if (isNaN(num) || num < 0) num = 0
     num = Math.round(num * 100) / 100
@@ -91,6 +93,32 @@ export default function PlaceCard({ place, tripId }: PlaceCardProps) {
     }
   }
 
+  const handlePhotoDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!localImageUrl || isDeletingPhoto) return
+    setIsDeletingPhoto(true)
+    setError(null)
+    try {
+      const storagePath = localImageUrl.split('/trip-photos/')[1]
+      if (storagePath) {
+        await supabase.storage.from('trip-photos').remove([storagePath])
+      }
+      
+      const { error: dbError } = await supabase
+        .from('places')
+        .update({ image_url: null })
+        .eq('id', place.id)
+      
+      if (dbError) throw dbError
+      
+      setLocalImageUrl(null)
+    } catch (err) {
+      setError('Failed to delete photo.')
+    } finally {
+      setIsDeletingPhoto(false)
+    }
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, field: 'estimated' | 'actual', val: string) => {
     if (e.key === 'Enter') {
       e.currentTarget.blur()
@@ -105,6 +133,7 @@ export default function PlaceCard({ place, tripId }: PlaceCardProps) {
   }
 
   return (
+    <>
     <div
       ref={setNodeRef}
       style={style}
@@ -143,11 +172,35 @@ export default function PlaceCard({ place, tripId }: PlaceCardProps) {
 
       {/* Thumbnail */}
       {localImageUrl && (
-        <img
-          src={localImageUrl}
-          alt={place.name}
-          className="h-16 w-16 shrink-0 rounded-lg object-cover"
-        />
+        <div className="relative shrink-0">
+          <img
+            src={localImageUrl}
+            alt={place.name}
+            className="h-16 w-16 cursor-pointer rounded-lg object-cover transition-opacity hover:opacity-80"
+            onClick={() => setIsLightboxOpen(true)}
+          />
+          <button
+            onClick={handlePhotoDelete}
+            disabled={isDeletingPhoto}
+            className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow hover:bg-red-600 disabled:opacity-50"
+            aria-label="Delete photo"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
       )}
 
       {/* Content */}
@@ -223,5 +276,41 @@ export default function PlaceCard({ place, tripId }: PlaceCardProps) {
         />
       </div>
     </div>
+
+    {/* Lightbox Overlay */}
+    {isLightboxOpen && localImageUrl && (
+      <div
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 p-4"
+        onClick={() => setIsLightboxOpen(false)}
+      >
+        <button
+          className="absolute right-6 top-6 text-white hover:text-gray-300 focus:outline-none"
+          onClick={() => setIsLightboxOpen(false)}
+          aria-label="Close lightbox"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+        <img
+          src={localImageUrl}
+          alt={place.name}
+          className="max-h-[85vh] max-w-full rounded-lg object-contain shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    )}
+    </>
   )
 }
