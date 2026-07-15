@@ -390,19 +390,19 @@ export default function PlaceBoard({
       </div>
 
       {/* Add Place Form */}
-      <form onSubmit={handleAddPlace} className="flex gap-2">
+      <form onSubmit={handleAddPlace} className="flex flex-col md:flex-row gap-2 w-full">
         <input
           type="text"
           placeholder="New place name..."
           value={newPlaceName}
           onChange={(e) => setNewPlaceName(e.target.value)}
           disabled={isAdding}
-          className="flex-1 rounded-xl border border-rose-100 bg-white/80 px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          className="w-full flex-1 rounded-xl border border-rose-100 bg-white/80 px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
         />
         <button
           type="submit"
           disabled={isAdding || !newPlaceName.trim()}
-          className="rounded-full bg-rose-400 px-6 py-3 text-sm font-bold text-white shadow-md shadow-rose-200 transition-all hover:bg-rose-500 hover:shadow-lg disabled:opacity-50"
+          className="w-full md:w-auto rounded-full bg-rose-400 px-6 py-3 text-sm font-bold text-white shadow-md shadow-rose-200 transition-all hover:bg-rose-500 hover:shadow-lg disabled:opacity-50"
         >
           {isAdding ? 'Adding...' : 'Add'}
         </button>

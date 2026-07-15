@@ -350,9 +350,9 @@ export default function PlaceCard({ place, tripId, onDelete }: PlaceCardProps) {
         </div>
 
         {/* Cost inputs */}
-        <div className="mt-4 flex flex-wrap gap-4 border-t border-gray-100 pt-3 dark:border-gray-800">
-          <div className="flex flex-col">
-            <label className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+        <div className="mt-4 flex flex-wrap gap-4 border-t border-rose-100/60 pt-3 dark:border-gray-800">
+          <div className="flex flex-col flex-1 min-w-[120px]">
+            <label className="mb-1 text-xs font-medium text-rose-500 dark:text-rose-400">
               Est. Cost
             </label>
             <input
@@ -362,11 +362,11 @@ export default function PlaceCard({ place, tripId, onDelete }: PlaceCardProps) {
               onBlur={(e) => handleCostSubmit('estimated', e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, 'estimated', estInput)}
               disabled={isUpdating}
-              className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+              className="w-full rounded-xl border border-rose-100 bg-white/80 px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
             />
           </div>
-          <div className="flex flex-col">
-            <label className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+          <div className="flex flex-col flex-1 min-w-[120px]">
+            <label className="mb-1 text-xs font-medium text-rose-500 dark:text-rose-400">
               Act. Cost
             </label>
             <input
@@ -376,13 +376,13 @@ export default function PlaceCard({ place, tripId, onDelete }: PlaceCardProps) {
               onBlur={(e) => handleCostSubmit('actual', e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, 'actual', actInput)}
               disabled={isUpdating}
-              className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+              className="w-full rounded-xl border border-rose-100 bg-white/80 px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
             />
           </div>
         </div>
 
         {/* Maps URL */}
-        <div className="mt-4 flex items-center gap-3 border-t border-gray-100 pt-3 dark:border-gray-800">
+        <div className="mt-4 flex flex-col md:flex-row items-stretch md:items-center gap-3 border-t border-rose-100/60 pt-3 dark:border-gray-800">
           <input
             type="text"
             placeholder="Paste Google Maps Link..."
@@ -395,14 +395,14 @@ export default function PlaceCard({ place, tripId, onDelete }: PlaceCardProps) {
               }
             }}
             disabled={isUpdating}
-            className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            className="w-full md:flex-1 rounded-xl border border-rose-100 bg-white/80 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
           />
           {committedMapsUrl.current && (
             <a
               href={committedMapsUrl.current}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex shrink-0 items-center gap-1.5 rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+              className="flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 shadow-sm transition-colors hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
               Open Maps
