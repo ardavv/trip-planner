@@ -120,31 +120,36 @@ export default function PlaceBoard({
     })
   )
 
+  const [newPlaceName, setNewPlaceName] = useState('')
+  const [isAdding, setIsAdding] = useState(false)
+
   // -------------------------------------------------------------------------
   // Realtime subscription — exactly once per mount (Requirement 10.1, 10.2)
   // -------------------------------------------------------------------------
   useEffect(() => {
-    // 1. Postgres Changes — place UPDATE events filtered by trip_id
+    // 1. Postgres Changes — place UPDATE & INSERT events filtered by trip_id
+    const handlePgChange = (payload: any) => {
+      const changed = payload.new as Place
+
+      // Conflict deferral: if a local write is in-flight, queue the event
+      if (pendingWriteRef.current) {
+        queuedUpdatesRef.current.push(changed)
+      } else {
+        onPlacesChange((prev) => applyMerge(prev, [changed]))
+      }
+    }
+
     const pgChannel = supabase
       .channel(`places:${tripId}`)
       .on(
         'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'places',
-          filter: `trip_id=eq.${tripId}`,
-        },
-        (payload) => {
-          const updated = payload.new as Place
-
-          // Conflict deferral: if a local write is in-flight, queue the event
-          if (pendingWriteRef.current) {
-            queuedUpdatesRef.current.push(updated)
-          } else {
-            onPlacesChange((prev) => applyMerge(prev, [updated]))
-          }
-        }
+        { event: 'UPDATE', schema: 'public', table: 'places', filter: `trip_id=eq.${tripId}` },
+        handlePgChange
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'places', filter: `trip_id=eq.${tripId}` },
+        handlePgChange
       )
       .subscribe()
 
@@ -290,6 +295,39 @@ export default function PlaceBoard({
   }
 
   // -------------------------------------------------------------------------
+  // Add Place feature
+  // -------------------------------------------------------------------------
+  async function handleAddPlace(e: React.FormEvent) {
+    e.preventDefault()
+    const name = newPlaceName.trim()
+    if (!name) return
+
+    setIsAdding(true)
+    try {
+      const maxOrderIndex =
+        placesRef.current.length > 0
+          ? Math.max(...placesRef.current.map((p) => p.order_index))
+          : 0
+
+      const { error } = await supabase
+        .from('places')
+        .insert({
+          trip_id: tripId,
+          name: name,
+          order_index: maxOrderIndex + 1.0,
+          status: 'TODO',
+        })
+
+      if (error) throw error
+      setNewPlaceName('')
+    } catch (err) {
+      console.error('Failed to add place', err)
+    } finally {
+      setIsAdding(false)
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Manual Sync — user-accessible escape hatch (Requirement 9.6)
   // -------------------------------------------------------------------------
   async function handleSync() {
@@ -328,6 +366,25 @@ export default function PlaceBoard({
           {isSyncing ? 'Syncing…' : '🔄 Sync'}
         </button>
       </div>
+
+      {/* Add Place Form */}
+      <form onSubmit={handleAddPlace} className="flex gap-2">
+        <input
+          type="text"
+          placeholder="New place name..."
+          value={newPlaceName}
+          onChange={(e) => setNewPlaceName(e.target.value)}
+          disabled={isAdding}
+          className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+        />
+        <button
+          type="submit"
+          disabled={isAdding || !newPlaceName.trim()}
+          className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+        >
+          {isAdding ? 'Adding...' : 'Add'}
+        </button>
+      </form>
 
       {/* DnD context wrapping sortable place cards */}
       <DndContext
