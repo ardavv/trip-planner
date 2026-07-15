@@ -52,6 +52,10 @@ export default function PlaceCard({ place, tripId }: PlaceCardProps) {
   const [isDeletingPhoto, setIsDeletingPhoto] = useState(false)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
 
+  // Maps URL tracking
+  const committedMapsUrl = useRef(place.maps_url || '')
+  const [mapsUrlInput, setMapsUrlInput] = useState(place.maps_url || '')
+
   // Sync inputs if prop changes externally (e.g. from Realtime sync)
   useEffect(() => {
     const est = Number(place.estimated_cost || 0)
@@ -60,7 +64,11 @@ export default function PlaceCard({ place, tripId }: PlaceCardProps) {
     setEstInput(String(est))
     setActInput(String(act))
     setLocalImageUrl(place.image_url)
-  }, [place.estimated_cost, place.actual_cost, place.image_url])
+    
+    const mUrl = place.maps_url || ''
+    committedMapsUrl.current = mUrl
+    setMapsUrlInput(mUrl)
+  }, [place.estimated_cost, place.actual_cost, place.image_url, place.maps_url])
 
   const handleCostSubmit = async (field: 'estimated' | 'actual', rawValue: string) => {
     let num = parseFloat(rawValue)
@@ -90,6 +98,36 @@ export default function PlaceCard({ place, tripId }: PlaceCardProps) {
       else setActInput(String(committedCost.current.actual))
     } else {
       committedCost.current[field] = num
+    }
+  }
+
+  const handleMapsUrlSubmit = async (rawValue: string) => {
+    const url = rawValue.trim()
+    
+    // Validate URL (if not empty)
+    if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+      setError('Maps URL must start with http:// or https://')
+      setMapsUrlInput(committedMapsUrl.current)
+      return
+    }
+
+    if (url === committedMapsUrl.current) return
+
+    setIsUpdating(true)
+    setError(null)
+
+    const { error: updateError } = await supabase
+      .from('places')
+      .update({ maps_url: url || null })
+      .eq('id', place.id)
+
+    setIsUpdating(false)
+
+    if (updateError) {
+      setError('Failed to save Maps URL')
+      setMapsUrlInput(committedMapsUrl.current)
+    } else {
+      committedMapsUrl.current = url
     }
   }
 
@@ -259,6 +297,35 @@ export default function PlaceCard({ place, tripId }: PlaceCardProps) {
               className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
             />
           </div>
+        </div>
+
+        {/* Maps URL */}
+        <div className="mt-4 flex items-center gap-3 border-t border-gray-100 pt-3 dark:border-gray-800">
+          <input
+            type="text"
+            placeholder="Paste Google Maps Link..."
+            value={mapsUrlInput}
+            onChange={(e) => setMapsUrlInput(e.target.value)}
+            onBlur={(e) => handleMapsUrlSubmit(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.currentTarget.blur()
+              }
+            }}
+            disabled={isUpdating}
+            className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          />
+          {committedMapsUrl.current && (
+            <a
+              href={committedMapsUrl.current}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex shrink-0 items-center gap-1.5 rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+              Open Maps
+            </a>
+          )}
         </div>
         
         {error && (

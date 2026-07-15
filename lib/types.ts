@@ -20,6 +20,7 @@ export interface Place {
   lat: number | null
   lng: number | null
   image_url: string | null
+  maps_url?: string | null
   estimated_cost: number  // NUMERIC(15,2), stored as JS number; default 0
   actual_cost: number     // NUMERIC(15,2), stored as JS number; default 0
   created_at: string
