@@ -129,8 +129,14 @@ export default function PlaceBoard({
   // Realtime subscription — exactly once per mount (Requirement 10.1, 10.2)
   // -------------------------------------------------------------------------
   useEffect(() => {
-    // 1. Postgres Changes — place UPDATE & INSERT events filtered by trip_id
+    // 1. Postgres Changes — place UPDATE, INSERT, & DELETE events filtered by trip_id
     const handlePgChange = (payload: any) => {
+      if (payload.eventType === 'DELETE') {
+        const deletedId = payload.old.id
+        onPlacesChange((prev) => prev.filter((p) => p.id !== deletedId))
+        return
+      }
+
       const changed = payload.new as Place
 
       // Conflict deferral: if a local write is in-flight, queue the event
@@ -151,6 +157,11 @@ export default function PlaceBoard({
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'places', filter: `trip_id=eq.${tripId}` },
+        handlePgChange
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'places', filter: `trip_id=eq.${tripId}` },
         handlePgChange
       )
       .subscribe()
@@ -386,28 +397,12 @@ export default function PlaceBoard({
           value={newPlaceName}
           onChange={(e) => setNewPlaceName(e.target.value)}
           disabled={isAdding}
-          className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-        />
-        <input
-          type="text"
-          placeholder="Lat (opt)"
-          value={newLat}
-          onChange={(e) => setNewLat(e.target.value)}
-          disabled={isAdding}
-          className="w-24 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-        />
-        <input
-          type="text"
-          placeholder="Lng (opt)"
-          value={newLng}
-          onChange={(e) => setNewLng(e.target.value)}
-          disabled={isAdding}
-          className="w-24 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          className="flex-1 rounded-xl border border-rose-100 bg-white/80 px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
         />
         <button
           type="submit"
           disabled={isAdding || !newPlaceName.trim()}
-          className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+          className="rounded-full bg-rose-400 px-6 py-3 text-sm font-bold text-white shadow-md shadow-rose-200 transition-all hover:bg-rose-500 hover:shadow-lg disabled:opacity-50"
         >
           {isAdding ? 'Adding...' : 'Add'}
         </button>
@@ -425,7 +420,12 @@ export default function PlaceBoard({
         >
           <div className="space-y-3">
             {places.map((place) => (
-              <PlaceCard key={place.id} place={place} tripId={tripId} />
+              <PlaceCard 
+                key={place.id} 
+                place={place} 
+                tripId={tripId} 
+                onDelete={(deletedId) => onPlacesChange((prev) => prev.filter((p) => p.id !== deletedId))}
+              />
             ))}
           </div>
         </SortableContext>

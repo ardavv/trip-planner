@@ -33,8 +33,8 @@ export default function ReviewForm({ placeId, initialReviews }: ReviewFormProps)
 
     try {
       const payloads = []
-      if (t1) payloads.push({ place_id: placeId, user_name: 'Person 1', comment: t1 })
-      if (t2) payloads.push({ place_id: placeId, user_name: 'Person 2', comment: t2 })
+      if (t1) payloads.push({ place_id: placeId, user_name: '💬 Kata Gue', comment: t1 })
+      if (t2) payloads.push({ place_id: placeId, user_name: '✨ Kata Bini', comment: t2 })
 
       const { data, error: insertError } = await supabase
         .from('reviews')
@@ -70,17 +70,17 @@ export default function ReviewForm({ placeId, initialReviews }: ReviewFormProps)
   }
 
   return (
-    <div className="mt-4 border-t border-gray-100 pt-3 dark:border-gray-800">
+    <div className="mt-4 border-t border-rose-100/60 pt-3 dark:border-gray-800">
       
       {/* Existing Reviews */}
       {reviews.length > 0 && (
         <div className="mb-4 space-y-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-rose-400 dark:text-rose-300">
             Reviews
           </h4>
           {reviews.map((rev) => (
-            <div key={rev.id} className="rounded-md bg-gray-50 p-3 dark:bg-gray-800/50">
-              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <div key={rev.id} className="rounded-xl bg-rose-50/50 p-3 shadow-sm dark:bg-gray-800/50">
+              <div className="flex items-center justify-between text-xs text-rose-400 dark:text-rose-300">
                 <span className="font-medium text-gray-900 dark:text-gray-100">
                   {rev.user_name}
                 </span>
@@ -97,29 +97,29 @@ export default function ReviewForm({ placeId, initialReviews }: ReviewFormProps)
       {/* Input Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5 text-sm">
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-            Person 1
+          <label className="text-xs font-medium text-rose-500 dark:text-rose-400">
+            💬 Kata Gue
           </label>
           <input
             type="text"
-            placeholder="Add your review..."
+            placeholder="Claypotnya enak ga?..."
             value={reviewTexts[0]}
             onChange={(e) => setReviewTexts([e.target.value, reviewTexts[1]])}
             disabled={isSubmitting}
-            className="rounded-md border border-gray-300 px-3 py-1.5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            className="rounded-xl border border-rose-100 bg-white/80 px-3 py-1.5 focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
           />
         </div>
         <div className="flex flex-col gap-1.5 text-sm">
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-            Person 2
+          <label className="text-xs font-medium text-rose-500 dark:text-rose-400">
+            ✨ Kata Bini
           </label>
           <input
             type="text"
-            placeholder="Add your review..."
+            placeholder="Ratingnya berapa sayang?..."
             value={reviewTexts[1]}
             onChange={(e) => setReviewTexts([reviewTexts[0], e.target.value])}
             disabled={isSubmitting}
-            className="rounded-md border border-gray-300 px-3 py-1.5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            className="rounded-xl border border-rose-100 bg-white/80 px-3 py-1.5 focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
           />
         </div>
 
@@ -128,7 +128,7 @@ export default function ReviewForm({ placeId, initialReviews }: ReviewFormProps)
         <button
           type="submit"
           disabled={isSubmitting || (!reviewTexts[0].trim() && !reviewTexts[1].trim())}
-          className="mt-1 self-start rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+          className="mt-1 self-start rounded-full bg-rose-400 px-5 py-2 text-sm font-medium text-white shadow-md shadow-rose-200 transition-all hover:bg-rose-500 hover:shadow-lg disabled:opacity-50"
         >
           {isSubmitting ? 'Submitting...' : 'Submit Reviews'}
         </button>

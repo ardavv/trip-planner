@@ -12,20 +12,21 @@ import { createClient } from '@/lib/client'
 interface PlaceCardProps {
   place: Place
   tripId: string
+  onDelete?: (id: string) => void
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  TODO: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  TODO: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
   CURRENT:
-    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  DONE: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  DONE: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
 }
 
 /**
  * A single draggable place card rendered inside the PlaceBoard SortableContext.
  * Uses `@dnd-kit/sortable` for drag-and-drop capability.
  */
-export default function PlaceCard({ place, tripId }: PlaceCardProps) {
+export default function PlaceCard({ place, tripId, onDelete }: PlaceCardProps) {
   const {
     attributes,
     listeners,
@@ -116,18 +117,83 @@ export default function PlaceCard({ place, tripId }: PlaceCardProps) {
     setIsUpdating(true)
     setError(null)
 
-    const { error: updateError } = await supabase
-      .from('places')
-      .update({ maps_url: url || null })
-      .eq('id', place.id)
+    try {
+      let parsedLat: number | null = null
+      let parsedLng: number | null = null
 
-    setIsUpdating(false)
+      if (url) {
+        // Attempt to parse coordinates via our internal API
+        const parseRes = await fetch('/api/parse-maps', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        })
+        
+        if (parseRes.ok) {
+          const data = await parseRes.json()
+          if (typeof data.lat === 'number' && typeof data.lng === 'number') {
+            parsedLat = data.lat
+            parsedLng = data.lng
+          }
+        }
+      }
 
-    if (updateError) {
+      // Prepare payload
+      const payload: any = { maps_url: url || null }
+      if (parsedLat !== null && parsedLng !== null) {
+        payload.lat = parsedLat
+        payload.lng = parsedLng
+      }
+
+      const { error: updateError } = await supabase
+        .from('places')
+        .update(payload)
+        .eq('id', place.id)
+
+      if (updateError) throw updateError
+
+      committedMapsUrl.current = url
+    } catch (err) {
+      console.error('Maps update error', err)
       setError('Failed to save Maps URL')
       setMapsUrlInput(committedMapsUrl.current)
-    } else {
-      committedMapsUrl.current = url
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleDeletePlace = async () => {
+    if (isUpdating) return
+    const confirmed = window.confirm("Are you sure you want to delete this place?")
+    if (!confirmed) return
+
+    setIsUpdating(true)
+    setError(null)
+    try {
+      // Clean up storage if photo exists
+      if (localImageUrl) {
+        const storagePath = localImageUrl.split('/trip-photos/')[1]
+        if (storagePath) {
+          await supabase.storage.from('trip-photos').remove([storagePath])
+        }
+      }
+
+      const { error: dbError } = await supabase
+        .from('places')
+        .delete()
+        .eq('id', place.id)
+
+      if (dbError) throw dbError
+      
+      // If deleted successfully, the Realtime listener in PlaceBoard will remove it from the UI.
+      // We also trigger onDelete immediately for an optimistic UI update.
+      if (onDelete) {
+        onDelete(place.id)
+      }
+    } catch (err) {
+      console.error('Delete error', err)
+      setError('Failed to delete place.')
+      setIsUpdating(false)
     }
   }
 
@@ -175,11 +241,11 @@ export default function PlaceCard({ place, tripId }: PlaceCardProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative flex items-start gap-4 rounded-xl border p-4 transition-shadow ${
+      className={`relative flex items-start gap-4 rounded-3xl border border-rose-100/60 p-4 transition-all ${
         isDragging
-          ? 'border-blue-400 shadow-lg dark:border-blue-500'
-          : 'border-gray-200 shadow-sm hover:shadow-md dark:border-gray-700'
-      } bg-white dark:bg-gray-900`}
+          ? 'border-rose-400 shadow-xl shadow-rose-200/50 dark:border-rose-500'
+          : 'shadow-md shadow-rose-100/50 hover:shadow-lg hover:shadow-rose-100/60 dark:shadow-none dark:border-gray-800'
+      } bg-white/90 backdrop-blur-sm dark:bg-gray-900/90`}
     >
       {/* Drag handle */}
       <button
@@ -214,7 +280,7 @@ export default function PlaceCard({ place, tripId }: PlaceCardProps) {
           <img
             src={localImageUrl}
             alt={place.name}
-            className="h-16 w-16 cursor-pointer rounded-lg object-cover transition-opacity hover:opacity-80"
+            className="h-16 w-16 cursor-pointer rounded-2xl object-cover transition-opacity hover:opacity-80"
             onClick={() => setIsLightboxOpen(true)}
           />
           <button
@@ -243,17 +309,33 @@ export default function PlaceCard({ place, tripId }: PlaceCardProps) {
 
       {/* Content */}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h3 className="truncate font-medium text-gray-900 dark:text-gray-100">
-            {place.name}
-          </h3>
-          <span
-            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
-              STATUS_BADGE[place.status]
-            }`}
+        <div className="flex items-center gap-2 justify-between">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <h3 className="truncate font-medium text-gray-900 dark:text-gray-100">
+              {place.name}
+            </h3>
+            <span
+              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                STATUS_BADGE[place.status]
+              }`}
+            >
+              {place.status}
+            </span>
+          </div>
+          
+          <button
+            onClick={handleDeletePlace}
+            disabled={isUpdating}
+            className="shrink-0 p-1 text-rose-300 hover:text-rose-600 transition-colors disabled:opacity-50"
+            aria-label="Delete place"
+            title="Delete place"
           >
-            {place.status}
-          </span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h18"/>
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+            </svg>
+          </button>
         </div>
 
         {/* Status control */}

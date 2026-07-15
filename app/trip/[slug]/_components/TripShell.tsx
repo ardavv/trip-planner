@@ -39,7 +39,8 @@ export default function TripShell({
   )
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className="min-h-screen bg-rose-50/30">
+      <div className="mx-auto max-w-4xl px-4 py-8">
       {/* Trip header */}
       <header className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -71,6 +72,7 @@ export default function TripShell({
 
       {/* Ephemeral location ping service */}
       <PingService slug={slug} onPingsChange={setPingMarkers} />
+      </div>
     </div>
   )
 }
